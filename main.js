@@ -18,7 +18,7 @@ sendBtn.onclick = () => {
   input.value = "";
 
   setTimeout(() => {
-    addMessage("橘猫：喵～我听到了。", "cat");
+    addMessage("橘猫：喵～猫猫--呆。", "cat");
   }, 400);
 };
 
