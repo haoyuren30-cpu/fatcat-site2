@@ -15,7 +15,7 @@
 
   <!-- Cat -->
   <img 
-    id="cat" 
+    id="fatcat" 
     src="./public/cat.png" 
     alt="fat cat"
   />
@@ -42,3 +42,33 @@
 
 </body>
 </html>
+<script>
+const cat = document.getElementById("fatcat");
+
+const openEye = "cat.png";
+const halfEye = "cat_h_blink.png";
+const closeEye = "cat_f_blink.png";
+
+function blinkOnce() {
+  // 半闭
+  cat.src = halfEye;
+
+  setTimeout(() => {
+    // 全闭
+    cat.src = closeEye;
+  }, 120);
+
+  setTimeout(() => {
+    // 回到半闭
+    cat.src = halfEye;
+  }, 240);
+
+  setTimeout(() => {
+    // 睁开
+    cat.src = openEye;
+  }, 360);
+}
+
+// 每 4 秒眨一次
+setInterval(blinkOnce, 4000);
+</script>
