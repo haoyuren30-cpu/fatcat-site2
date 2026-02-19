@@ -1,106 +1,162 @@
-/* ========= 0) Reset ========= */
-* { box-sizing: border-box; }
+/* =========================
+   Reset
+========================= */
+* {
+  box-sizing: border-box;
+}
 
 html, body {
   margin: 0;
   padding: 0;
   height: 100%;
-  background: #fff;
+  background: #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+               Roboto, Helvetica, Arial, sans-serif;
   color: #111;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
-/* ========= 1) Layout =========
-   约定 HTML 里有这些 id/class：
-   <div id="app">
-     <img id="cat" ...>
-     <div id="messages"></div>
-     <div id="inputBar">
-        <input id="input">
-        <button id="send">
-     </div>
-   </div>
-*/
-#app{
+/* =========================
+   App Layout
+========================= */
+#app {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
-/* ========= 2) Cat (强制不超大) ========= */
-#cat{
-  display: block;
-  width: min(70vw, 260px);   /* 手机最多70%宽，PC最多260px */
+/* =========================
+   Cat
+========================= */
+#cat {
+  width: min(70vw, 260px);
   max-width: 260px;
   height: auto;
-  margin-top: clamp(16px, 6vh, 56px);
-  margin-bottom: 18px;
+  margin-top: clamp(24px, 8vh, 80px);
+  margin-bottom: 16px;
 }
 
-/* ========= 3) Messages (可滚动) ========= */
-#messages{
+/* =========================
+   Messages Area
+========================= */
+#messages {
   width: min(720px, 100%);
   flex: 1;
   overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  padding: 0 14px calc(96px + env(safe-area-inset-bottom));
+  padding: 12px 16px 180px;
 }
 
-/* 消息（可选，如果你 JS 有加 class） */
-.message{
-  margin: 0 0 12px 0;
-  line-height: 1.55;
-  font-size: 16px;
-  word-break: break-word;
-  white-space: pre-wrap;
-}
-.message.user{ text-align: right; }
-.message.ai{ text-align: left; }
-
-/* ========= 4) Bottom input bar (GPT风格) ========= */
-#inputBar{
+/* =========================
+   Input Bar (raised)
+========================= */
+#inputBar {
   position: fixed;
   left: 0;
-  bottom: 0;
+  bottom: 22px;   /* ⭐ 整体抬高 */
+
   width: 100%;
-  background: #fff;
-  border-top: 1px solid rgba(0,0,0,0.08);
-  padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
-}
-
-#inputBarInner{
-  width: min(720px, 100%);
-  margin: 0 auto;
   display: flex;
-  gap: 10px;
+  justify-content: center;
+
+  background: rgba(255,255,255,0.75);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+
+  padding: 14px;
+}
+
+/* =========================
+   Input Container
+========================= */
+#inputBarInner {
+  width: min(720px, 100%);
+  display: flex;
   align-items: center;
+  gap: 12px;
 }
 
-#input{
+/* =========================
+   Text Input
+========================= */
+#input {
   flex: 1;
-  height: 44px;
-  border-radius: 999px;
-  border: 1px solid rgba(0,0,0,0.14);
-  padding: 0 16px;
+  height: 56px;
+
+  padding: 0 18px;
   font-size: 16px;
+
+  border-radius: 18px;
+  border: 1px solid rgba(0,0,0,0.08);
+
+  background: rgba(245,245,245,0.85);
+  backdrop-filter: blur(10px);
+
   outline: none;
+
+  box-shadow:
+    0 8px 22px rgba(0,0,0,0.08),
+    inset 0 1px 0 rgba(255,255,255,0.6);
 }
 
-#send{
-  height: 44px;
-  border-radius: 999px;
-  border: 0;
+#input::placeholder {
+  color: rgba(0,0,0,0.4);
+}
+
+/* =========================
+   Send Button (arrow)
+========================= */
+#send {
+  width: 56px;
+  height: 56px;
+
+  border-radius: 50%;
+  border: none;
+
   background: #111;
   color: #fff;
-  padding: 0 16px;
-  font-size: 15px;
-  cursor: pointer;
-}
-#send:active{ transform: scale(0.98); }
 
-/* ========= 5) 小屏优化 ========= */
-@media (max-width: 420px){
-  #cat{ width: min(78vw, 240px); }
-  #messages{ padding-left: 12px; padding-right: 12px; }
+  font-size: 22px;
+  line-height: 1;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 12px 26px rgba(0,0,0,0.18),
+    inset 0 2px 0 rgba(255,255,255,0.12);
+
+  transition: transform 0.12s ease,
+              opacity 0.12s ease;
 }
+
+#send:active {
+  transform: scale(0.95);
+  opacity: 0.9;
+}
+
+/* =========================
+   Mobile Fine Tune
+========================= */
+@media (max-width: 480px) {
+
+  #cat {
+    width: min(78vw, 240px);
+  }
+
+  #input {
+    height: 52px;
+  }
+
+  #send {
+    width: 52px;
+    height: 52px;
+  }
+
+  #inputBar {
+    bottom: 18px;   /* 手机再抬一点 */
+  }
+}
+
