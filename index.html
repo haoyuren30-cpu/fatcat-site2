@@ -1,15 +1,44 @@
-<div class="app">
-  <div class="cat-area">
-    <img id="cat" src="/public/cat.png" alt="fat cat" />
-  </div>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FatCat Chat</title>
 
-  <div class="chat-area" id="messages"></div>
+  <!-- CSS -->
+  <link rel="stylesheet" href="./style.css">
+</head>
 
-  <div class="input-bar">
-    <div class="input-wrapper">
-      <input id="input" placeholder="跟猫猫说点什么..." />
+<body>
+
+<div id="app">
+
+  <!-- Cat -->
+  <img 
+    id="cat" 
+    src="./public/cat.png" 
+    alt="fat cat"
+  />
+
+  <!-- Chat messages -->
+  <div id="messages"></div>
+
+  <!-- Input bar -->
+  <div id="inputBar">
+    <div id="inputBarInner">
+      <input 
+        id="input" 
+        type="text" 
+        placeholder="跟橘猫说点什么..."
+      />
       <button id="send">发送</button>
     </div>
   </div>
+
 </div>
 
+<!-- JS -->
+<script src="./main.js"></script>
+
+</body>
+</html>
