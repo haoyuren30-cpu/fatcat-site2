@@ -1,4 +1,4 @@
-// ===== 图片路径：按你当前结构 public/xxx.png =====
+// ===== 图片路径 =====
 const IMG_OPEN  = "./public/cat.png";
 const IMG_HALF  = "./public/cat_h_blink.png";
 const IMG_CLOSE = "./public/cat_f_blink.png";
@@ -9,7 +9,7 @@ const formEl = document.getElementById("chatForm");
 const inputEl = document.getElementById("chatInput");
 const messagesEl = document.getElementById("messages");
 
-// ===== 预加载（避免眨眼时“问号”）=====
+// ===== 预加载 =====
 function preload(src) {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -22,26 +22,24 @@ function preload(src) {
 async function preloadAll() {
   try {
     await Promise.all([preload(IMG_OPEN), preload(IMG_HALF), preload(IMG_CLOSE)]);
-    // 确保初始图也在
     catEl.src = IMG_OPEN;
   } catch (e) {
-    // 如果你看到问号，99%是路径不对
     console.error("Image preload failed:", e);
   }
 }
 
-// ===== 聊天显示 =====
+// ===== 气泡 =====
 function addBubble(text, who) {
   const div = document.createElement("div");
   div.className = `bubble ${who}`;
   div.textContent = text;
   messagesEl.appendChild(div);
-  // 滚到底部
   messagesEl.scrollTop = messagesEl.scrollHeight;
 }
 
-// ===== 眨眼（open -> half -> close -> half -> open）=====
+// ===== 眨眼 =====
 let blinking = false;
+
 async function blinkOnce() {
   if (blinking) return;
   blinking = true;
@@ -57,8 +55,7 @@ async function blinkOnce() {
   blinking = false;
 }
 
-// 每 4 秒自动眨一次
-setInterval(() => { blinkOnce(); }, 4000);
+setInterval(() => blinkOnce(), 4000);
 
 // ===== 表单提交 =====
 formEl.addEventListener("submit", async (e) => {
@@ -70,26 +67,26 @@ formEl.addEventListener("submit", async (e) => {
   addBubble(text, "user");
   inputEl.value = "";
 
-  // 眨一下 + 假装回复（你后面接 API 就把这里换掉）
-    // 眨一下 + 调你的后端 /api/chat
   await blinkOnce();
 
   try {
-    addBubble("…", "cat"); // 占位
+    addBubble("…", "cat");
     const placeholder = messagesEl.lastElementChild;
 
     const r = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: text }),
+      body: JSON.stringify({ message: text })
     });
+
     const data = await r.json();
     if (!r.ok) throw new Error(data?.error || "Request failed");
 
-    placeholder.textContent = data.reply || "（我刚刚走神了…再说一次）";
+    placeholder.textContent = data.reply || "（橘猫走神了，再试一次）";
   } catch (err) {
-    addBubble(`出错了：${err.message}`, "cat");
+    addBubble("出错了：" + err.message, "cat");
   }
+});
 
-// 启动
+// ===== 启动 =====
 preloadAll();
