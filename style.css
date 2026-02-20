@@ -1,127 +1,115 @@
-/* ===== 基础 ===== */
+/* ===== reset ===== */
 * { box-sizing: border-box; }
-html, body { height: 100%; margin: 0; }
+html, body { height: 100%; }
 body {
+  margin: 0;
   background: #fff;
   color: #111;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
     "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
 }
 
-/* iPhone 底部安全区 */
+/* 让底部输入框适配 iPhone 安全区 */
 :root {
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-/* ===== 页面布局 ===== */
-.page{
-  min-height: 100dvh;
-  display: grid;
-  grid-template-rows: 1fr auto;
-  padding: 24px 16px calc(16px + var(--safe-bottom));
-  gap: 18px;
+.app{
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
+/* 橘猫 */
 .hero{
-  display: grid;
-  place-items: center;
-}
-
-/* ===== 猫：锁死容器，换图不变大 ===== */
-.cat-wrap{
-  width: min(56vw, 360px);  /* 手机按屏幕缩放，PC 最大 360 */
-  max-width: 92vw;
-  aspect-ratio: 3 / 4;     /* 竖图比例，稳定布局 */
-  display: grid;
-  place-items: center;
-}
-
-.cat-img{
+  padding-top: clamp(24px, 6vh, 56px);
+  padding-bottom: 8px;
+  display: flex;
+  justify-content: center;
   width: 100%;
-  height: 100%;
-  object-fit: contain;     /* 不裁剪，保持比例 */
+}
+.cat-img{
+  width: min(56vw, 320px);
+  max-width: 320px;
+  height: auto;
   display: block;
+  user-select: none;
 }
 
-/* ===== 输入框（GPT 手机端风格）===== */
+/* 聊天记录 */
+.messages{
+  width: min(920px, calc(100vw - 24px));
+  flex: 1;
+  padding: 8px 0 16px;
+  overflow: auto;
+}
+
+/* 气泡 */
+.bubble{
+  max-width: min(720px, 92%);
+  padding: 10px 12px;
+  border-radius: 16px;
+  margin: 10px 0;
+  line-height: 1.45;
+  font-size: 15px;
+  word-break: break-word;
+  box-shadow: 0 8px 24px rgba(0,0,0,.06);
+}
+.bubble.user{
+  margin-left: auto;
+  background: rgba(0,0,0,.06);
+}
+.bubble.cat{
+  margin-right: auto;
+  background: rgba(0,0,0,.04);
+}
+
+/* 底部输入区（gpt-ish） */
 .composer{
-  display: grid;
-  place-items: center;
+  width: 100%;
+  padding: 12px 12px calc(12px + var(--safe-bottom));
+  display: flex;
+  justify-content: center;
+  position: sticky;
+  bottom: 0;
+  background: linear-gradient(to top, rgba(255,255,255,1), rgba(255,255,255,.92), rgba(255,255,255,0));
+  backdrop-filter: blur(10px);
 }
 
 .composer-inner{
-  width: min(920px, 100%);
-  display: grid;
-  grid-template-columns: 1fr auto;
+  width: min(920px, calc(100vw - 24px));
+  display: flex;
   align-items: center;
-  gap: 12px;
-
-  padding: 14px 14px;
-  border-radius: 999px;
-
-  /* 半透明高级灰 + 轻微玻璃感 */
-  background: rgba(30, 30, 30, 0.06);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-
-  box-shadow:
-    0 10px 30px rgba(0, 0, 0, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 18px;
+  background: rgba(0,0,0,.06);
+  border: 1px solid rgba(0,0,0,.06);
 }
 
-/* 输入框 */
 .composer-input{
-  border: none;
+  flex: 1;
+  border: 0;
   outline: none;
   background: transparent;
   font-size: 16px;
-  line-height: 1.2;
-  padding: 4px 6px;
-  color: #111;
+  padding: 8px 6px;
 }
 
-.composer-input::placeholder{
-  color: rgba(0, 0, 0, 0.35);
-}
-
-/* 发送按钮：黑色圆形 + 白色箭头 */
 .send-btn{
-  width: 46px;
-  height: 46px;
+  width: 44px;
+  height: 44px;
   border-radius: 999px;
-  border: none;
-  cursor: pointer;
-
-  background: #111;
-  color: #fff;
-
+  border: 0;
+  background: rgba(0,0,0,.88);
   display: grid;
   place-items: center;
-
-  box-shadow:
-    0 10px 24px rgba(0,0,0,0.16),
-    inset 0 1px 0 rgba(255,255,255,0.18);
-
-  transition: transform 120ms ease, opacity 120ms ease;
+  cursor: pointer;
 }
-
-.send-btn:active{
-  transform: scale(0.97);
-}
-
-.send-icon{
+.send-btn svg{
   width: 22px;
   height: 22px;
+  fill: #fff;
 }
-
-/* 小屏：输入区稍微往上一点（你要“位置上面一点”） */
-@media (max-height: 740px){
-  .page{ padding-bottom: calc(28px + var(--safe-bottom)); }
-}
-
-/* 大屏：整体更居中一点 */
-@media (min-width: 900px){
-  .page{ padding-top: 34px; }
-}
-
+.send-btn:active{ transform: scale(.98); }

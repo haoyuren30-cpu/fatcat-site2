@@ -2,24 +2,27 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, viewport-fit=cover"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>FatCat Chat</title>
     <link rel="stylesheet" href="./style.css" />
   </head>
 
   <body>
-    <main class="page">
-      <!-- 猫 -->
+    <main class="app">
       <section class="hero">
-        <div class="cat-wrap">
-          <img id="fatcat" class="cat-img" src="./public/cat.png" alt="fatcat" />
-        </div>
+        <img
+          id="fatcat"
+          class="cat-img"
+          src="./public/cat.png"
+          alt="fatcat"
+          draggable="false"
+        />
       </section>
 
-      <!-- 底部输入框（GPT风格） -->
+      <!-- 聊天记录容器：没有它就不会显示文字 -->
+      <section id="messages" class="messages" aria-live="polite"></section>
+
+      <!-- 输入区 -->
       <footer class="composer">
         <form id="chatForm" class="composer-inner" autocomplete="off">
           <input
@@ -27,26 +30,12 @@
             class="composer-input"
             type="text"
             placeholder="跟橘猫说点什么…"
-            maxlength="2000"
+            maxlength="200"
           />
-          <button id="sendBtn" class="send-btn" type="submit" aria-label="send">
-            <!-- 箭头图标 -->
-            <svg viewBox="0 0 24 24" class="send-icon" aria-hidden="true">
-              <path
-                d="M12 4l7 7-7 7"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-              <path
-                d="M19 11H4"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.5"
-                stroke-linecap="round"
-              />
+          <button id="sendBtn" class="send-btn" type="submit" aria-label="发送">
+            <!-- 简单箭头 -->
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M7 11.5h7.586l-2.293-2.293 1.414-1.414L18.414 12l-4.707 4.207-1.414-1.414 2.293-2.293H7z"/>
             </svg>
           </button>
         </form>
