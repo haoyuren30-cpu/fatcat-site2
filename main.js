@@ -71,11 +71,25 @@ formEl.addEventListener("submit", async (e) => {
   inputEl.value = "";
 
   // 眨一下 + 假装回复（你后面接 API 就把这里换掉）
+    // 眨一下 + 调你的后端 /api/chat
   await blinkOnce();
-  setTimeout(() => {
-    addBubble("喵～我收到了！(这里之后接你的 GPT 回复)", "cat");
-  }, 600);
-});
+
+  try {
+    addBubble("…", "cat"); // 占位
+    const placeholder = messagesEl.lastElementChild;
+
+    const r = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: text }),
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data?.error || "Request failed");
+
+    placeholder.textContent = data.reply || "（我刚刚走神了…再说一次）";
+  } catch (err) {
+    addBubble(`出错了：${err.message}`, "cat");
+  }
 
 // 启动
 preloadAll();
