@@ -35,11 +35,11 @@ function addBubble(text, who) {
   div.textContent = text;
   messagesEl.appendChild(div);
   messagesEl.scrollTop = messagesEl.scrollHeight;
+  return div;
 }
 
 // ===== 眨眼 =====
 let blinking = false;
-
 async function blinkOnce() {
   if (blinking) return;
   blinking = true;
@@ -57,6 +57,27 @@ async function blinkOnce() {
 
 setInterval(() => blinkOnce(), 4000);
 
+// ===== 调后端 =====
+async function callApi(message) {
+  const r = await fetch("/api/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message })
+  });
+
+  // 先读文本，再尝试 json（避免接口返回 html 时直接报错）
+  const raw = await r.text();
+  let data = null;
+  try { data = JSON.parse(raw); } catch { data = { error: "Non-JSON response", raw }; }
+
+  if (!r.ok) {
+    const msg = data?.error ? `${data.error}${data.detail ? " - " + data.detail : ""}` : `HTTP ${r.status}`;
+    throw new Error(msg);
+  }
+
+  return data;
+}
+
 // ===== 表单提交 =====
 formEl.addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -69,22 +90,25 @@ formEl.addEventListener("submit", async (e) => {
 
   await blinkOnce();
 
+  const placeholder = addBubble("…", "cat");
+
   try {
-    addBubble("…", "cat");
-    const placeholder = messagesEl.lastElementChild;
+    const data = await callApi(text);
 
-    const r = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: text })
-    });
+    if (data.error) {
+      placeholder.textContent = `后端报错：${data.error}${data.detail ? " - " + data.detail : ""}`;
+      return;
+    }
 
-    const data = await r.json();
-    if (!r.ok) throw new Error(data?.error || "Request failed");
+    if (data.reply) {
+      placeholder.textContent = data.reply;
+      return;
+    }
 
-    placeholder.textContent = data.reply || "（橘猫走神了，再试一次）";
+    // reply 为空：直接把 debug 打出来（你就能看到原因）
+    placeholder.textContent = `空回复（debug=${JSON.stringify(data.debug || {})}）`;
   } catch (err) {
-    addBubble("出错了：" + err.message, "cat");
+    placeholder.textContent = `请求失败：${err.message}`;
   }
 });
 
