@@ -1,50 +1,42 @@
-/* ===== reset ===== */
+/* =========================
+   0) Reset & Base
+   ========================= */
 * { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { height: 100%; }
-
-:root {
-  /* 桌面（默认）尺寸 */
-  --cat-size: 360px;
-  --panel-max-w: 1100px;
-  --panel-w: 92vw;
-  --messages-h: 340px;      /* 桌面聊天框更“扁”：别太高 */
-  --gap: 12px;
-
-  /* 气泡 */
-  --bubble-font: 15px;
-}
-
-/* 关键：用动态视口单位解决手机键盘弹出导致布局异常 */
+html { -webkit-text-size-adjust: 100%; }
 body {
   background: #fff;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
     "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif;
 
-  height: 100vh;
-  height: 100dvh;           /* 支持的浏览器会用这个，键盘弹出更稳 */
-  overflow: hidden;
+  /* 关键：不要锁死页面，不用 overflow:hidden
+     这样输入框永远不会“消失在视口外” */
+  min-height: 100vh;
+  padding: 18px 14px;
 
   display: flex;
   flex-direction: column;
   align-items: center;
-
-  padding: 18px 16px;
-  gap: var(--gap);
+  gap: 12px;
 }
 
-/* ===== 橘猫 ===== */
-#fatcat {
-  width: var(--cat-size);
-  max-width: 90vw;
-  flex: 0 0 auto;
+/* =========================
+   1) Cat
+   ========================= */
+#fatcat{
+  width: 360px;        /* 桌面默认更大 */
+  max-width: 88vw;
+  height: auto;
   user-select: none;
 }
 
-/* ===== 消息区：固定高度 + 内部滚动，不再把页面撑长 ===== */
-.messages {
-  width: min(var(--panel-max-w), var(--panel-w));
-  flex: 0 0 auto;
-  height: var(--messages-h);     /* 桌面固定高度，让它“扁” */
+/* =========================
+   2) Messages box (IMPORTANT)
+   - 固定“最大高度”，超过就内部滚动
+   - 不会无限拉长页面
+   ========================= */
+.messages{
+  width: min(1100px, 94vw);
+  max-height: 360px;   /* 桌面：更扁，不要太高 */
   overflow-y: auto;
   overflow-x: hidden;
 
@@ -57,37 +49,65 @@ body {
   flex-direction: column;
   gap: 10px;
 
-  scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
 }
 
-/* ===== 输入区：固定底部，不跟着滚 ===== */
-#chatForm {
-  width: min(var(--panel-max-w), var(--panel-w));
-  flex: 0 0 auto;
-
-  display: flex;
-  gap: 10px;
-  align-items: center;
+/* =========================
+   3) Chat bubbles
+   ========================= */
+.bubble{
+  max-width: min(860px, 92%);
+  padding: 10px 12px;
+  border-radius: 16px;
+  line-height: 1.45;
+  font-size: 15px;
+  word-break: break-word;
+  white-space: pre-wrap;
 }
 
-/* 关键：iOS 防止输入时自动放大 —— font-size >= 16px */
-#chatInput {
+.bubble.user{
+  align-self: flex-end;
+  margin-left: auto;
+  background: rgba(255,159,67,0.16);
+}
+
+.bubble.cat{
+  align-self: flex-start;
+  margin-right: auto;
+  background: rgba(0,0,0,0.045);
+}
+
+/* =========================
+   4) Input area (ALWAYS VISIBLE)
+   ========================= */
+#chatForm{
+  width: min(1100px, 94vw);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  /* 关键：给足底部空间，避免手机键盘/浏览器 UI 挤压 */
+  padding-bottom: 6px;
+}
+
+#chatInput{
   flex: 1 1 auto;
   padding: 12px 14px;
-  border-radius: 20px;
+  border-radius: 999px;
   border: 1px solid #ddd;
-
-  font-size: 16px;              /* ✅ 防止 iPhone 自动 zoom */
-  line-height: 1.2;
   outline: none;
 
-  -webkit-text-size-adjust: 100%;
+  /* 关键：iPhone 不自动放大 */
+  font-size: 16px;
+  line-height: 1.2;
+  background: #fff;
 }
 
-#chatInput:focus { border-color: #ff9f43; }
+#chatInput:focus{
+  border-color: #ff9f43;
+}
 
-#chatForm button {
+#chatForm button{
   width: 44px;
   height: 44px;
   border-radius: 999px;
@@ -96,71 +116,59 @@ body {
   color: #fff;
   font-size: 18px;
   cursor: pointer;
-  touch-action: manipulation;
 }
 
-#chatForm button:hover { background: #ff8c1a; }
-
-/* ===== 气泡 ===== */
-.bubble {
-  max-width: min(860px, 92%);
-  padding: 10px 12px;
-  border-radius: 16px;
-  line-height: 1.45;
-  font-size: var(--bubble-font);
-  word-break: break-word;
-  white-space: pre-wrap;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+#chatForm button:hover{
+  background: #ff8c1a;
 }
 
-.bubble.user {
-  align-self: flex-end;
-  margin-left: auto;
-  background: rgba(255, 159, 67, 0.16);
-}
-
-.bubble.cat {
-  align-self: flex-start;
-  margin-right: auto;
-  background: rgba(0, 0, 0, 0.04);
-}
-
-/* =========================================================
-   📱 手机端：猫更大、聊天框更矮约 30%、宽度满一些
-   ========================================================= */
-@media (max-width: 600px) {
-  :root {
-    --cat-size: 260px;           /* ✅ 手机橘猫更大 */
-    --panel-w: 94vw;
-    --messages-h: clamp(150px, 26dvh, 220px);
-    /* 解释：比之前更矮（大约再少 30%），但不会小到没法看 */
-    --bubble-font: 15px;
-  }
-
-  body {
+/* =========================
+   5) Mobile tuning
+   - 猫更大
+   - 对话框高度再矮 ~30%
+   ========================= */
+@media (max-width: 600px){
+  body{
     padding: 14px 12px;
     gap: 10px;
   }
 
-  .messages {
+  #fatcat{
+    width: 280px;     /* 手机：猫更大 */
+    max-width: 92vw;
+  }
+
+  .messages{
+    max-height: 230px; /* 手机：比桌面矮（约少 30%） */
     padding: 12px;
   }
 
-  #chatForm button {
+  #chatForm{
+    width: 96vw;
+  }
+
+  #chatForm button{
     width: 42px;
     height: 42px;
   }
 }
 
-/* =========================================================
-   🖥️ 大屏桌面：猫更大、聊天框更宽、更扁
-   ========================================================= */
-@media (min-width: 1000px) {
-  :root {
-    --cat-size: 420px;           /* ✅ 电脑橘猫更大 */
-    --panel-max-w: 1200px;
-    --panel-w: 86vw;             /* ✅ 聊天框更宽 */
-    --messages-h: 320px;         /* ✅ 更扁一点 */
-    --bubble-font: 16px;
+/* =========================
+   6) Large desktop tuning
+   - 更宽、更大猫
+   - 聊天框更宽但更扁
+   ========================= */
+@media (min-width: 1100px){
+  #fatcat{ width: 440px; }
+
+  .messages{
+    width: min(1200px, 88vw);
+    max-height: 320px; /* 更扁 */
   }
+
+  #chatForm{
+    width: min(1200px, 88vw);
+  }
+
+  .bubble{ font-size: 16px; }
 }
