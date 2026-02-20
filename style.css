@@ -3,40 +3,46 @@
    ========================= */
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html { -webkit-text-size-adjust: 100%; }
+
 body {
   background: #fff;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
     "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif;
 
-  /* 关键：不要锁死页面，不用 overflow:hidden
-     这样输入框永远不会“消失在视口外” */
   min-height: 100vh;
-  padding: 18px 14px;
-
+  padding: 22px 16px 18px; /* 顶部留多一点，避免猫头贴边 */
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
+}
+
+/* 给整页一个最大宽度并居中（桌面更好看） */
+body > * {
+  width: min(1200px, 94vw);
 }
 
 /* =========================
-   1) Cat
+   1) Cat (强制居中)
    ========================= */
 #fatcat{
-  width: 360px;        /* 桌面默认更大 */
-  max-width: 88vw;
+  width: 440px;          /* 桌面更大 */
+  max-width: 92vw;
   height: auto;
+
+  display: block;        /* ✅ 关键：避免 inline 导致偏左 */
+  margin: 0 auto;        /* ✅ 关键：强制水平居中 */
+
   user-select: none;
 }
 
 /* =========================
-   2) Messages box (IMPORTANT)
-   - 固定“最大高度”，超过就内部滚动
-   - 不会无限拉长页面
+   2) Messages box
+   - 继续用 max-height，保证不无限拉长
+   - 桌面再扁一点，避免把猫挤出视野
    ========================= */
 .messages{
-  width: min(1100px, 94vw);
-  max-height: 360px;   /* 桌面：更扁，不要太高 */
+  max-height: 300px;     /* ✅ 桌面更扁，避免滚动时挡住猫 */
   overflow-y: auto;
   overflow-x: hidden;
 
@@ -60,7 +66,7 @@ body {
   padding: 10px 12px;
   border-radius: 16px;
   line-height: 1.45;
-  font-size: 15px;
+  font-size: 16px;
   word-break: break-word;
   white-space: pre-wrap;
 }
@@ -78,16 +84,13 @@ body {
 }
 
 /* =========================
-   4) Input area (ALWAYS VISIBLE)
+   4) Input area (永远可见)
    ========================= */
 #chatForm{
-  width: min(1100px, 94vw);
   display: flex;
   align-items: center;
   gap: 10px;
-
-  /* 关键：给足底部空间，避免手机键盘/浏览器 UI 挤压 */
-  padding-bottom: 6px;
+  padding-bottom: 8px;
 }
 
 #chatInput{
@@ -97,8 +100,7 @@ body {
   border: 1px solid #ddd;
   outline: none;
 
-  /* 关键：iPhone 不自动放大 */
-  font-size: 16px;
+  font-size: 16px; /* iPhone 不自动放大 */
   line-height: 1.2;
   background: #fff;
 }
@@ -108,8 +110,8 @@ body {
 }
 
 #chatForm button{
-  width: 44px;
-  height: 44px;
+  width: 46px;
+  height: 46px;
   border-radius: 999px;
   border: none;
   background: #ff9f43;
@@ -125,50 +127,32 @@ body {
 /* =========================
    5) Mobile tuning
    - 猫更大
-   - 对话框高度再矮 ~30%
+   - 对话框更矮 30%
    ========================= */
 @media (max-width: 600px){
   body{
-    padding: 14px 12px;
+    padding: 16px 12px 14px;
     gap: 10px;
   }
 
+  body > * {
+    width: 96vw;
+  }
+
   #fatcat{
-    width: 280px;     /* 手机：猫更大 */
-    max-width: 92vw;
+    width: 300px;     /* 手机猫更大 */
+    max-width: 96vw;
   }
 
   .messages{
-    max-height: 230px; /* 手机：比桌面矮（约少 30%） */
+    max-height: 220px; /* 手机更矮 */
     padding: 12px;
   }
 
-  #chatForm{
-    width: 96vw;
-  }
+  .bubble{ font-size: 15px; }
 
   #chatForm button{
     width: 42px;
     height: 42px;
   }
-}
-
-/* =========================
-   6) Large desktop tuning
-   - 更宽、更大猫
-   - 聊天框更宽但更扁
-   ========================= */
-@media (min-width: 1100px){
-  #fatcat{ width: 440px; }
-
-  .messages{
-    width: min(1200px, 88vw);
-    max-height: 320px; /* 更扁 */
-  }
-
-  #chatForm{
-    width: min(1200px, 88vw);
-  }
-
-  .bubble{ font-size: 16px; }
 }
