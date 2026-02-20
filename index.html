@@ -1,74 +1,58 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FatCat Chat</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>FatCat Chat</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
 
-  <!-- CSS -->
-  <link rel="stylesheet" href="./style.css">
-</head>
+  <body>
+    <main class="page">
+      <!-- 猫 -->
+      <section class="hero">
+        <div class="cat-wrap">
+          <img id="fatcat" class="cat-img" src="/cat.png" alt="fatcat" />
+        </div>
+      </section>
 
-<body>
+      <!-- 底部输入框（GPT风格） -->
+      <footer class="composer">
+        <form id="chatForm" class="composer-inner" autocomplete="off">
+          <input
+            id="chatInput"
+            class="composer-input"
+            type="text"
+            placeholder="跟橘猫说点什么…"
+            maxlength="2000"
+          />
+          <button id="sendBtn" class="send-btn" type="submit" aria-label="send">
+            <!-- 箭头图标 -->
+            <svg viewBox="0 0 24 24" class="send-icon" aria-hidden="true">
+              <path
+                d="M12 4l7 7-7 7"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M19 11H4"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+              />
+            </svg>
+          </button>
+        </form>
+      </footer>
+    </main>
 
-<div id="app">
-
-  <!-- Cat -->
-  <img 
-    id="fatcat" 
-    src="./public/cat.png" 
-    alt="fat cat"
-  />
-
-  <!-- Chat messages -->
-  <div id="messages"></div>
-
-  <!-- Input bar -->
-  <div id="inputBar">
-    <div id="inputBarInner">
-      <input 
-        id="input" 
-        type="text" 
-        placeholder="跟橘猫说点什么..."
-      />
-      <button id="send" aria-label="send">⬆</button>
-    </div>
-  </div>
-
-</div>
-
-<!-- JS -->
-<script src="./main.js"></script>
-
-</body>
+    <script src="./main.js"></script>
+  </body>
 </html>
-<script>
-const cat = document.getElementById("fatcat");
-
-const openEye = "cat.png";
-const halfEye = "cat_h_blink.png";
-const closeEye = "cat_f_blink.png";
-
-function blinkOnce() {
-  // 半闭
-  cat.src = halfEye;
-
-  setTimeout(() => {
-    // 全闭
-    cat.src = closeEye;
-  }, 120);
-
-  setTimeout(() => {
-    // 回到半闭
-    cat.src = halfEye;
-  }, 240);
-
-  setTimeout(() => {
-    // 睁开
-    cat.src = openEye;
-  }, 360);
-}
-
-// 每 4 秒眨一次
-setInterval(blinkOnce, 4000);
-</script>
