@@ -1,6 +1,6 @@
-const IMG_OPEN  = "/cat.png";
-const IMG_HALF  = "/cat_h_blink.png";
-const IMG_CLOSE = "/cat_f_blink.png";
+const IMG_OPEN  = "./public/cat.png";
+const IMG_HALF  = "./public/cat_h_blink.png";
+const IMG_CLOSE = "./public/cat_f_blink.png";
 
 const cat = document.getElementById("fatcat");
 const form = document.getElementById("chatForm");
