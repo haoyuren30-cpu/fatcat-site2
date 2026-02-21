@@ -1,174 +1,175 @@
 /* =========================
-   Global
-========================= */
-
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    Roboto, Helvetica, Arial, sans-serif;
-}
+   0) Reset & Base
+   ========================= */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-text-size-adjust: 100%; }
 
 body {
-  background: #ffffff;   /* 保持纯白 */
-  height: 100vh;
-  overflow: hidden;
-}
+  background: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif;
 
-/* =========================
-   Layout
-========================= */
-
-.app {
+  min-height: 100vh;
+  padding: 22px 16px 18px; /* 顶部留多一点，避免猫头贴边 */
   display: flex;
-  height: 100vh;
-  width: 100vw;
-}
-
-/* =========================
-   Left (Cat Area)
-========================= */
-
-.left {
-  flex: 1;
-  display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  background: #ffffff;
+  gap: 14px;
 }
 
-#cat {
-  width: 420px;
-  max-width: 90%;
+/* 给整页一个最大宽度并居中（桌面更好看） */
+body > * {
+  width: min(1200px, 94vw);
+}
+
+/* =========================
+   1) Cat (强制居中)
+   ========================= */
+#fatcat{
+  width: 440px;          /* 桌面更大 */
+  max-width: 92vw;
   height: auto;
+
+  display: block;        /* ✅ 避免 inline 导致偏左 */
+  margin: 0 auto;        /* ✅ 强制水平居中 */
+
+  user-select: none;
 }
 
 /* =========================
-   Right (Chat Area)
-========================= */
-
-.right {
-  width: 360px;
-  background: #f7f7f8;
+   2) Chat wrap
+   - 让消息区 + 输入区纵向排布
+   ========================= */
+.chat-wrap{
   display: flex;
   flex-direction: column;
-  padding: 14px;
-  border-left: 1px solid #e5e5e5;
+  gap: 10px;
 }
 
 /* =========================
-   Messages
-========================= */
-
-#messages {
-  flex: 1;
+   3) Messages box
+   - 继续用 max-height，保证不无限拉长
+   - 桌面再扁一点，避免把猫挤出视野
+   ========================= */
+.messages{
+  max-height: 300px;     /* ✅ 桌面更扁，避免滚动时挡住猫 */
   overflow-y: auto;
-  padding-right: 4px;
-  margin-bottom: 12px;
-}
+  overflow-x: hidden;
 
-.msg {
-  padding: 10px 14px;
-  margin-bottom: 10px;
-  border-radius: 14px;
-  max-width: 85%;
-  line-height: 1.4;
-  font-size: 14px;
-  word-wrap: break-word;
-}
+  padding: 14px;
+  border-radius: 18px;
+  background: rgba(245,245,245,0.92);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.06);
 
-.user {
-  background: #ff9f43;
-  color: white;
-  margin-left: auto;
-}
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 
-.bot {
-  background: #e9e9eb;
-  color: #111;
-  margin-right: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* =========================
-   Input Area  (重点修复)
-========================= */
-
-.chat-wrap {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
+   4) Chat bubbles
+   ========================= */
+.bubble{
+  max-width: min(860px, 92%);
+  padding: 10px 12px;
+  border-radius: 16px;
+  line-height: 1.45;
+  font-size: 16px;
+  word-break: break-word;
+  white-space: pre-wrap;
 }
 
-.input-bar {
+.bubble.user{
+  align-self: flex-end;
+  margin-left: auto;
+  background: rgba(255,159,67,0.16);
+}
+
+.bubble.cat{
+  align-self: flex-start;
+  margin-right: auto;
+  background: rgba(0,0,0,0.045);
+}
+
+/* =========================
+   5) Input area (永远可见) ✅修复：选择器对齐 HTML
+   HTML 实际是：
+   <div class="input-bar">
+     <input id="input" ... />
+     <button id="send">→</button>
+   </div>
+   ========================= */
+.input-bar{
   display: flex;
   align-items: center;
   gap: 10px;
+  padding-bottom: 8px;
   width: 100%;
 }
 
-#input {
-  flex: 1;
+#input{
+  flex: 1 1 auto;
   width: 100%;
   padding: 12px 14px;
   border-radius: 999px;
   border: 1px solid #ddd;
   outline: none;
-  font-size: 15px;
+
+  font-size: 16px; /* iPhone 不自动放大 */
+  line-height: 1.2;
+  background: #fff;
 }
 
-#input:focus {
+#input:focus{
   border-color: #ff9f43;
 }
 
-#send {
+#send{
   width: 46px;
   height: 46px;
-  border-radius: 50%;
+  border-radius: 999px;
   border: none;
   background: #ff9f43;
-  color: white;
+  color: #fff;
   font-size: 18px;
   cursor: pointer;
+  flex: 0 0 auto;
 }
 
-#send:hover {
+#send:hover{
   background: #ff8c1a;
 }
 
 /* =========================
-   Scrollbar
-========================= */
-
-#messages::-webkit-scrollbar {
-  width: 6px;
-}
-
-#messages::-webkit-scrollbar-thumb {
-  background: #ccc;
-  border-radius: 3px;
-}
-
-/* =========================
-   Mobile
-========================= */
-
-@media (max-width: 768px) {
-
-  .app {
-    flex-direction: column;
+   6) Mobile tuning
+   - 猫更大
+   - 对话框更矮 30%
+   ========================= */
+@media (max-width: 600px){
+  body{
+    padding: 16px 12px 14px;
+    gap: 10px;
   }
 
-  .left {
-    height: 45vh;
+  body > * {
+    width: 96vw;
   }
 
-  .right {
-    width: 100%;
-    height: 55vh;
+  #fatcat{
+    width: 300px;     /* 手机猫更大 */
+    max-width: 96vw;
   }
 
-  #send {
+  .messages{
+    max-height: 220px; /* 手机更矮 */
+    padding: 12px;
+  }
+
+  .bubble{ font-size: 15px; }
+
+  #send{
     width: 42px;
     height: 42px;
   }
