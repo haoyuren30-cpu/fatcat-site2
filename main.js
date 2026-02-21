@@ -1,116 +1,97 @@
-// ===== 图片路径 =====
-const IMG_OPEN  = "./public/cat.png";
-const IMG_HALF  = "./public/cat_h_blink.png";
-const IMG_CLOSE = "./public/cat_f_blink.png";
-
-// ===== DOM =====
+// =============================
+// 元素
+// =============================
 const catEl = document.getElementById("fatcat");
-const formEl = document.getElementById("chatForm");
-const inputEl = document.getElementById("chatInput");
 const messagesEl = document.getElementById("messages");
+const inputEl = document.getElementById("input");
+const sendBtn = document.getElementById("send");
 
-// ===== 预加载 =====
-function preload(src) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => resolve(src);
-    img.onerror = reject;
-    img.src = src;
-  });
+// =============================
+// 帧动画设置
+// =============================
+const START = 1;
+const END = 151;
+
+let frameIndex = START;
+let dir = 1;
+
+// 生成帧路径
+function getFrame(n) {
+  const num = String(n).padStart(4, "0");
+  return `/webp/${num}.webp`;
 }
 
-async function preloadAll() {
-  try {
-    await Promise.all([preload(IMG_OPEN), preload(IMG_HALF), preload(IMG_CLOSE)]);
-    catEl.src = IMG_OPEN;
-  } catch (e) {
-    console.error("Image preload failed:", e);
+// 播放一帧
+function tick() {
+  catEl.src = getFrame(frameIndex);
+
+  frameIndex += dir;
+
+  // 151 -> 150
+  if (frameIndex > END) {
+    dir = -1;
+    frameIndex = END - 1;
+  }
+
+  // 1 -> 1 -> 2...
+  if (frameIndex < START) {
+    dir = 1;
+    frameIndex = START;
   }
 }
 
-// ===== 气泡 =====
-function addBubble(text, who) {
+// 30fps 播放
+setInterval(tick, 33);
+
+// =============================
+// 聊天 UI
+// =============================
+function addBubble(text, role) {
   const div = document.createElement("div");
-  div.className = `bubble ${who}`;
-  div.textContent = text;
+  div.className = role === "user" ? "bubble user" : "bubble cat";
+  div.innerText = text;
   messagesEl.appendChild(div);
   messagesEl.scrollTop = messagesEl.scrollHeight;
-  return div;
 }
 
-// ===== 眨眼 =====
-let blinking = false;
-async function blinkOnce() {
-  if (blinking) return;
-  blinking = true;
-
-  catEl.src = IMG_HALF;
-  await new Promise(r => setTimeout(r, 70));
-  catEl.src = IMG_CLOSE;
-  await new Promise(r => setTimeout(r, 90));
-  catEl.src = IMG_HALF;
-  await new Promise(r => setTimeout(r, 70));
-  catEl.src = IMG_OPEN;
-
-  blinking = false;
-}
-
-setInterval(() => blinkOnce(), 4000);
-
-// ===== 调后端 =====
-async function callApi(message) {
-  const r = await fetch("/api/chat", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message })
-  });
-
-  // 先读文本，再尝试 json（避免接口返回 html 时直接报错）
-  const raw = await r.text();
-  let data = null;
-  try { data = JSON.parse(raw); } catch { data = { error: "Non-JSON response", raw }; }
-
-  if (!r.ok) {
-    const msg = data?.error ? `${data.error}${data.detail ? " - " + data.detail : ""}` : `HTTP ${r.status}`;
-    throw new Error(msg);
-  }
-
-  return data;
-}
-
-// ===== 表单提交 =====
-formEl.addEventListener("submit", async (e) => {
-  e.preventDefault();
-
+// =============================
+// 发送消息
+// =============================
+async function sendMessage() {
   const text = inputEl.value.trim();
   if (!text) return;
 
   addBubble(text, "user");
   inputEl.value = "";
 
-  await blinkOnce();
-
-  const placeholder = addBubble("…", "cat");
-
   try {
-    const data = await callApi(text);
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: text })
+    });
 
-    if (data.error) {
-      placeholder.textContent = `后端报错：${data.error}${data.detail ? " - " + data.detail : ""}`;
-      return;
-    }
+    const data = await res.json();
 
     if (data.reply) {
-      placeholder.textContent = data.reply;
-      return;
+      addBubble(data.reply, "cat");
+    } else {
+      addBubble("橘猫打了个哈欠，没有说话。", "cat");
     }
 
-    // reply 为空：直接把 debug 打出来（你就能看到原因）
-    placeholder.textContent = `空回复（debug=${JSON.stringify(data.debug || {})}）`;
   } catch (err) {
-    placeholder.textContent = `请求失败：${err.message}`;
+    console.error(err);
+    addBubble("橘猫网络开小差了。", "cat");
+  }
+}
+
+// =============================
+// 事件
+// =============================
+sendBtn.onclick = sendMessage;
+
+inputEl.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    sendMessage();
   }
 });
-
-// ===== 启动 =====
-preloadAll();

@@ -1,47 +1,29 @@
-<!doctype html>
-<html lang="zh-CN">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>FatCat Chat</title>
-    <link rel="stylesheet" href="./style.css" />
-  </head>
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>大橘猫</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
 
-  <body>
-    <main class="app">
-      <section class="hero">
-        <img
-          id="fatcat"
-          class="cat-img"
-          src="./public/cat.png"
-          alt="fatcat"
-          draggable="false"
-        />
-      </section>
+<body>
 
-      <!-- 聊天记录容器：没有它就不会显示文字 -->
-      <section id="messages" class="messages" aria-live="polite"></section>
+  <!-- 橘猫 -->
+  <div class="cat-wrap">
+    <img id="fatcat" src="/webp/0001.webp" alt="fatcat" />
+  </div>
 
-      <!-- 输入区 -->
-      <footer class="composer">
-        <form id="chatForm" class="composer-inner" autocomplete="off">
-          <input
-            id="chatInput"
-            class="composer-input"
-            type="text"
-            placeholder="跟橘猫说点什么…"
-            maxlength="200"
-          />
-          <button id="sendBtn" class="send-btn" type="submit" aria-label="发送">
-            <!-- 简单箭头 -->
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M7 11.5h7.586l-2.293-2.293 1.414-1.414L18.414 12l-4.707 4.207-1.414-1.414 2.293-2.293H7z"/>
-            </svg>
-          </button>
-        </form>
-      </footer>
-    </main>
+  <!-- 聊天区 -->
+  <div class="chat-wrap">
+    <div id="messages" class="messages"></div>
 
-    <script src="./main.js"></script>
-  </body>
+    <div class="input-bar">
+      <input id="input" placeholder="跟橘猫说点什么..." />
+      <button id="send">→</button>
+    </div>
+  </div>
+
+<script src="main.js"></script>
+</body>
 </html>
