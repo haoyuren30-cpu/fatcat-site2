@@ -134,7 +134,7 @@ function maybeSayHello() {
 
   const now = new Date();
   const intro = 
-    `我叫洛洛，是肥猫罗罗的弟弟，今天是我诞生的第${daysSinceBirth(now)}天（${formatTodayCN(now)}-2026年2月19日）。`;
+    `你好！我叫洛洛，是肥猫罗罗的弟弟。今天是我诞生的第${daysSinceBirth(now)}天。`;
 
   addBubble(intro, "cat");
   pushHistory("assistant", intro);
