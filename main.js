@@ -1,7 +1,8 @@
 // ===============================
 // 橘猫帧动画（仅：说话循环 + 待机定格）
 // 需求：取消蹦迪（待机不再播放），待机=说话帧的第一帧
-// 说话：循环播放 speak 帧，直到语音结束；结束后继续0.3秒，再定格回第一帧
+// 说话：循环播放 speak 帧，直到语音结束
+// 语音结束：固定从第15帧倒播到第1帧形成闭嘴动画，然后定格在第1帧，直到下一次说话
 // 并预加载所有 speak 图片，确保不卡顿
 // ===============================
 const catEl = document.getElementById("fatcat");
@@ -10,35 +11,31 @@ const catEl = document.getElementById("fatcat");
 const SPEAK_START = 1;
 const SPEAK_END = 105;
 
-// 待机使用 speak 第一帧
+// 待机使用 speak 第一帧（定格）
 const IDLE_FRAME_INDEX = SPEAK_START;
 
-// 语音结束后要停在“闭嘴帧”（顺序最近的一帧）并定格到下一次说话
-const MOUTH_CLOSED_FRAMES = [41, 42, 43, 58, 59, 68, 105];
-let stopOnClosedRequested = false;
-let targetClosedFrame = null;
-let currentDisplayedFrame = SPEAK_START;
+// 闭嘴动画：固定 15 -> 1
+const CLOSE_START = 15;
+const CLOSE_END = 1;
 
+// 由于 mp3 末尾 padding/静音，浏览器 ended 可能晚：提前触发闭嘴（秒）
+const CLOSE_EARLY_SEC = 0.30;
 
 let speakTimer = null;
 let speakFrameIndex = SPEAK_START;
 let speakPlaying = false;
 
+let closeTimer = null;
+let closeFrameIndex = CLOSE_START;
+
 let freezeResolve = null;
+let closeTriggered = false;
 
 function getSpeakFrame(n) {
   const num = String(n).padStart(4, "0");
   return `/webp/speak/frame_${num}.webp`;
 }
 
-function nextClosedFrame(cur) {
-  // cur: 当前正在显示的帧编号（1..105）
-  for (const f of MOUTH_CLOSED_FRAMES) {
-    if (f >= cur) return f;
-  }
-  // 如果当前已经超过最后一个闭嘴帧：顺序循环到第一个闭嘴帧
-  return MOUTH_CLOSED_FRAMES[0];
-}
 
 function stopSpeakLoop() {
   if (speakTimer) clearInterval(speakTimer);
@@ -46,51 +43,68 @@ function stopSpeakLoop() {
   speakPlaying = false;
 }
 
+function stopCloseAnim() {
+  if (closeTimer) clearInterval(closeTimer);
+  closeTimer = null;
+}
+
 function showIdleFrame() {
   stopSpeakLoop();
-  // 为了避免尺寸跳动：保持 speaking class（你之前的缩放修正仍然生效）
-  // 如果你想待机不缩放，可把这行改成 remove("speaking")
+  stopCloseAnim();
+  // 为了避免尺寸跳动：保持 speaking class（缩放修正仍生效）
   catEl.classList.add("speaking");
   catEl.src = getSpeakFrame(IDLE_FRAME_INDEX);
 }
 
 function startSpeakLoop() {
-  // speaking 状态：循环播放
+  // 新一轮说话开始：停止闭嘴动画、清空关闭状态
+  stopCloseAnim();
+  closeTriggered = false;
+  freezeResolve = null;
+
   catEl.classList.add("speaking");
   speakPlaying = true;
-
-  // 新一轮说话开始：清空“停在闭嘴帧”状态
-  stopOnClosedRequested = false;
-  targetClosedFrame = null;
-
   speakFrameIndex = SPEAK_START;
 
   if (speakTimer) clearInterval(speakTimer);
 
   speakTimer = setInterval(() => {
-    // 当前显示帧 = speakFrameIndex
     catEl.src = getSpeakFrame(speakFrameIndex);
-    currentDisplayedFrame = speakFrameIndex;
+    speakFrameIndex += 1;
+    if (speakFrameIndex > SPEAK_END) speakFrameIndex = SPEAK_START;
+  }, 33);
+}
 
-    // 如果已经收到“音频结束”信号：继续播放到顺序最近的闭嘴帧后定格
-    if (stopOnClosedRequested && targetClosedFrame && currentDisplayedFrame === targetClosedFrame) {
-      // 定格在闭嘴帧
-      stopSpeakLoop();
-      catEl.classList.add("speaking");
-      catEl.src = getSpeakFrame(targetClosedFrame);
-      stopOnClosedRequested = false;
-      targetClosedFrame = null;
+function playCloseReverse15to1() {
+  stopSpeakLoop();
+  stopCloseAnim();
+
+  closeFrameIndex = CLOSE_START;
+  // 立刻显示起始帧，避免“还在张嘴”
+  catEl.src = getSpeakFrame(closeFrameIndex);
+
+  closeTimer = setInterval(() => {
+    catEl.src = getSpeakFrame(closeFrameIndex);
+
+    closeFrameIndex -= 1;
+    if (closeFrameIndex < CLOSE_END) {
+      stopCloseAnim();
+      // 定格第一帧
+      catEl.src = getSpeakFrame(IDLE_FRAME_INDEX);
+
       if (typeof freezeResolve === "function") {
         const r = freezeResolve;
         freezeResolve = null;
         r();
       }
-      return;
     }
-
-    speakFrameIndex += 1;
-    if (speakFrameIndex > SPEAK_END) speakFrameIndex = SPEAK_START;
   }, 33);
+}
+
+function triggerCloseMouth() {
+  if (closeTriggered) return;
+  closeTriggered = true;
+  playCloseReverse15to1();
 }
 
 // 页面初始：待机定格
@@ -475,20 +489,50 @@ async function playVoiceAudioNoLimit(b64, mime = "audio/mpeg") {
   currentVoiceUrl = url;
 
   return await new Promise((resolve) => {
-    const finish = () => {
-      // ✅ 音频结束：继续播放到顺序最近的闭嘴帧后定格
-      stopOnClosedRequested = true;
-      targetClosedFrame = nextClosedFrame(currentDisplayedFrame);
-      cleanupVoiceAudio();
+    let rafId = null;
 
-      // 等真正定格到闭嘴帧后再 resolve（更精确）
-      freezeResolve = () => resolve();
+    const cleanup = () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = null;
+      cleanupVoiceAudio();
     };
 
-    audio.addEventListener("ended", finish, { once: true });
+    const closeNow = () => {
+      // ✅ 触发闭嘴：固定 15->1 倒播并定格
+      if (typeof freezeResolve !== "function") {
+        freezeResolve = () => resolve();
+      }
+      triggerCloseMouth();
+    };
+
+    const maybeCloseEarly = () => {
+      if (!currentVoiceAudio || currentVoiceAudio !== audio) return;
+      if (closeTriggered) return;
+
+      const d = audio.duration;
+      const t = audio.currentTime;
+
+      if (Number.isFinite(d) && d > 0 && Number.isFinite(t)) {
+        // 提前 CLOSE_EARLY_SEC 触发闭嘴，吃掉 mp3 尾巴/浏览器 ended 延迟
+        if (t >= Math.max(0, d - CLOSE_EARLY_SEC)) {
+          try { audio.pause(); } catch {}
+          closeNow();
+          cleanup();
+          return;
+        }
+      }
+      rafId = requestAnimationFrame(maybeCloseEarly);
+    };
+
+    audio.addEventListener("ended", () => {
+      // 兜底：即使没触发提前关闭，也要闭嘴并清理
+      closeNow();
+      cleanup();
+    }, { once: true });
+
     audio.addEventListener("error", () => {
       showIdleFrame();
-      cleanupVoiceAudio();
+      cleanup();
       setHint("语音播放失败了喵。");
       setTimeout(() => setHint(""), 1200);
       resolve();
@@ -496,16 +540,18 @@ async function playVoiceAudioNoLimit(b64, mime = "audio/mpeg") {
 
     audio.play().then(() => {
       startSpeakLoop(); // ✅ 真正开始播放才开始说话动画
+      rafId = requestAnimationFrame(maybeCloseEarly);
     }).catch(() => {
       // 播放被浏览器拦截：保持定格
       showIdleFrame();
       setHint("浏览器拦截了自动播放：请再点一下页面或再发一次喵。");
       setTimeout(() => setHint(""), 1800);
-      cleanupVoiceAudio();
+      cleanup();
       resolve();
     });
   });
 }
+
 
 // ===============================
 // 事件
