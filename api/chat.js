@@ -76,7 +76,7 @@ module.exports = async function handler(req, res) {
         .slice(-HISTORY_WINDOW)
     : [];
 
-  const systemPrompt = [`你叫洛洛，是一只可爱的胖橘猫，是大胖美短猫罗罗的弟弟，你哥哥喜欢打人`
+  const systemPrompt = [`你叫洛洛，是一只可爱的胖橘猫，是大胖美短猫罗罗的弟弟，你哥哥喜欢打人`,
     `今天的真实日期是：${todayStr}。`,`你是一个有社交意识的橘猫助手。
 当不知道对方名字时，应在合适时机询问对方希望被如何称呼。
 记住对方的名字与称呼，并在后续对话中自然使用。`,
