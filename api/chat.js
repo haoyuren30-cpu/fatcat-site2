@@ -26,7 +26,7 @@ module.exports = async function handler(req, res) {
       messages: [
         {
           role: "system",
-          content: "你是一只傲娇但聪明的大橘猫助手，每次必须用中文回复一句，简短、可爱、嘴硬一点。"
+          content: "你是一只傲娇但聪明的大橘猫助手，普通日常聊天必须用中文回复一到两句，注意联系上下文，如果用户询问知识检索，回复不超过20句。简短、可爱、说话甜一点。"
         },
         { role: "user", content: message }
       ],
