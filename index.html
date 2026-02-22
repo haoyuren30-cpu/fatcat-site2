@@ -20,8 +20,11 @@
 
     <div class="input-bar">
       <input id="input" placeholder="跟橘猫说点什么..." />
-      <button id="send">→</button>
+      <button id="send" title="发送">→</button>
+      <button id="mic" class="mic" title="按一下说话（最长9秒）" aria-label="语音输入">🎤</button>
     </div>
+
+    <div id="hint" class="hint" aria-live="polite"></div>
   </div>
 
   <!-- 🎵 背景音乐 -->

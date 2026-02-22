@@ -174,3 +174,42 @@ body > * {
     height: 42px;
   }
 }
+
+/* =========================
+   7) Mic button & hint
+   ========================= */
+#mic{
+  width: 46px;
+  height: 46px;
+  border-radius: 999px;
+  border: 1px solid #ddd;
+  background: #fff;
+  cursor: pointer;
+  flex: 0 0 auto;
+  font-size: 18px;
+  line-height: 46px;
+}
+
+#mic:hover{
+  border-color: #ff9f43;
+}
+
+#mic.recording{
+  border-color: #ff3b30;
+  box-shadow: 0 0 0 4px rgba(255,59,48,0.12);
+}
+
+.hint{
+  min-height: 18px;
+  font-size: 12px;
+  color: rgba(0,0,0,0.55);
+  padding: 0 4px;
+}
+
+@media (max-width: 600px){
+  #mic{
+    width: 42px;
+    height: 42px;
+    line-height: 42px;
+  }
+}
