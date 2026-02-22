@@ -1,5 +1,5 @@
 // ===============================
-// 橘猫帧动画（保持你原有逻辑即可）
+// 橘猫帧动画
 // ===============================
 const catEl = document.getElementById("fatcat");
 
@@ -30,6 +30,35 @@ function tick() {
 setInterval(tick, 33);
 
 // ===============================
+// 🎵 BGM 控制
+// ===============================
+const bgmEl = document.getElementById("bgm");
+
+function setupBgm() {
+  if (!bgmEl) return;
+
+  bgmEl.volume = 0.25;
+  bgmEl.muted = true;
+
+  const tryPlay = () => bgmEl.play().catch(() => {});
+
+  // 页面加载先尝试播放（静音）
+  tryPlay();
+
+  // 用户第一次交互后开声
+  const enableSound = () => {
+    bgmEl.muted = false;
+    bgmEl.volume = 0.25;
+    tryPlay();
+  };
+
+  window.addEventListener("pointerdown", enableSound, { once: true });
+  window.addEventListener("keydown", enableSound, { once: true });
+}
+
+setupBgm();
+
+// ===============================
 // 聊天 DOM
 // ===============================
 const messagesEl = document.getElementById("messages");
@@ -37,10 +66,10 @@ const inputEl = document.getElementById("input");
 const sendBtn = document.getElementById("send");
 
 // ===============================
-// 聊天历史（新增）
+// 聊天历史
 // ===============================
 const LS_KEY = "fatcat_chat_history_v1";
-const HISTORY_LIMIT = 10; // ✅ 近10条消息
+const HISTORY_LIMIT = 10;
 
 function loadHistory() {
   try {
@@ -68,8 +97,8 @@ function addBubble(text, role) {
   messagesEl.scrollTop = messagesEl.scrollHeight;
 }
 
-// 页面加载先渲染历史
-chatHistory.forEach((m) => {
+// 渲染历史
+chatHistory.forEach(m => {
   addBubble(m.content, m.role);
 });
 
@@ -87,13 +116,39 @@ function pushHistory(role, content) {
 }
 
 // ===============================
+// 🐱 进入页面第一句话
+// ===============================
+function formatTodayCN(d) {
+  return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`;
+}
+
+function daysSinceBirth(today) {
+  const birth = new Date(2026, 1, 19); // 2026-02-19
+  const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const diff = Math.floor((t0 - birth) / 86400000);
+  return diff + 1;
+}
+
+function maybeSayHello() {
+  if (chatHistory.length > 0) return;
+
+  const now = new Date();
+  const intro = 
+    `我叫洛洛，是肥猫罗罗的弟弟，今天是我诞生的第${daysSinceBirth(now)}天（${formatTodayCN(now)}-2026年2月19日）。`;
+
+  addBubble(intro, "cat");
+  pushHistory("assistant", intro);
+}
+
+maybeSayHello();
+
+// ===============================
 // 发送消息
 // ===============================
 async function sendMessage() {
   const text = inputEl.value.trim();
   if (!text) return;
 
-  // 用户气泡
   addBubble(text, "user");
   pushHistory("user", text);
   inputEl.value = "";
@@ -102,25 +157,20 @@ async function sendMessage() {
     const res = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-
-      // ✅ 把近10条历史一起带给后端
       body: JSON.stringify({
         message: text,
-        history: chatHistory,
-      }),
+        history: chatHistory
+      })
     });
 
     const data = await res.json();
-
     const reply = data.reply || "橘猫打了个盹，没有回应。";
 
     addBubble(reply, "cat");
     pushHistory("assistant", reply);
+
   } catch (err) {
-    console.error(err);
-    const fallback = "橘猫网络开小差了。";
-    addBubble(fallback, "cat");
-    pushHistory("assistant", fallback);
+    addBubble("橘猫网络开小差了。", "cat");
   }
 }
 
@@ -129,7 +179,7 @@ async function sendMessage() {
 // ===============================
 sendBtn.addEventListener("click", sendMessage);
 
-inputEl.addEventListener("keydown", (e) => {
+inputEl.addEventListener("keydown", e => {
   if (e.key === "Enter") {
     sendMessage();
   }
