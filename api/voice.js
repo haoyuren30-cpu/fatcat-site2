@@ -113,11 +113,11 @@ module.exports = async function handler(req, res) {
 
     // 3) TTS（返回 mp3，前端统一裁剪/补齐到5秒）
     // 用“喵~”增强可爱感
-    const ttsText = replyText.startsWith("喵") ? replyText : `喵~ ${replyText}`;
+    const ttsText = replyText.startsWith("喵") ? `喵喵~ ${replyText}` : `喵喵~ ${replyText}`;
 
     const speech = await client.audio.speech.create({
       model: "tts-1",
-      voice: "alloy",
+      voice: "nova",
       input: ttsText,
       format: "mp3",
     });
