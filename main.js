@@ -19,7 +19,7 @@ const CLOSE_START = 15;
 const CLOSE_END = 1;
 
 // 由于 mp3 末尾 padding/静音，浏览器 ended 可能晚：提前触发闭嘴（秒）
-const CLOSE_EARLY_SEC = 0.30;
+const CLOSE_EARLY_SEC = 0.80;
 
 let speakTimer = null;
 let speakFrameIndex = SPEAK_START;
