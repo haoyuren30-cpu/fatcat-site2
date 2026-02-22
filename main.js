@@ -323,6 +323,8 @@ let chunks = [];
 let recordingTimeout = null;
 let isRecording = false;
 let isSendingVoice = false;
+let recordStartAt = 0; // performance.now() at start
+
 
 // 语音播放：用于中断上一段
 let currentVoiceAudio = null;
@@ -380,8 +382,17 @@ function startRecording() {
         chunks = [];
         setRecordingUI(false);
 
-        if (!blob || blob.size < 800) {
-          // 太短/空录音，直接提示，不发请求
+        const elapsedMs = recordStartAt ? (performance.now() - recordStartAt) : 0;
+
+        // ✅ 移动端有时编码很“省字节”，不能只按 size 判断
+        // 规则：真正空录音（size==0）或极短（<300ms）才判定太短
+        if (!blob || blob.size === 0 || elapsedMs < 300) {
+          setHint("录音太短啦，再说一次喵～");
+          return;
+        }
+        // 如果时长不短但 size 很小，也放行（避免手机端误判）
+        // 只在“又短又小”时拦截
+        if (blob.size < 200 && elapsedMs < 800) {
           setHint("录音太短啦，再说一次喵～");
           return;
         }
@@ -392,7 +403,8 @@ function startRecording() {
           .finally(() => { isSendingVoice = false; });
       };
 
-      recorder.start();
+      recorder.start(250); // timeslice: help mobile flush chunks
+      recordStartAt = performance.now();
       setRecordingUI(true);
       setHint("录音中…（最长 15 秒）");
 
@@ -412,8 +424,11 @@ function stopRecording() {
 
   try {
     if (recorder && recorder.state !== "inactive") {
+      // ✅ 先请求 flush，再稍等一丢丢让 dataavailable 吐出来（手机端更稳）
       try { recorder.requestData(); } catch {}
-      recorder.stop();
+      setTimeout(() => {
+        try { recorder.stop(); } catch {}
+      }, 120);
     }
   } catch {
     setRecordingUI(false);
