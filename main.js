@@ -1,85 +1,107 @@
 // ===============================
-// 橘猫帧动画（待机 + 说话）
+// 橘猫帧动画（仅：说话循环 + 待机定格）
+// 需求：取消蹦迪（待机不再播放），待机=说话帧的第一帧
+// 说话：循环播放 speak 帧，直到语音结束；结束后继续0.3秒，再定格回第一帧
+// 并预加载所有 speak 图片，确保不卡顿
 // ===============================
 const catEl = document.getElementById("fatcat");
 
-// 待机（原本 webp/0001.webp ~ 0151.webp）
-const IDLE_START = 1;
-const IDLE_END = 151;
-
-// 说话（webp/speak/frame_0001.webp ~ frame_0105.webp）
+// speak 帧：/webp/speak/frame_0001.webp ~ frame_0105.webp
 const SPEAK_START = 1;
 const SPEAK_END = 105;
 
-let mode = "idle"; // "idle" | "speak"
-let frameIndex = IDLE_START;
-let dir = 1;
-let timer = null;
+// 待机使用 speak 第一帧
+const IDLE_FRAME_INDEX = SPEAK_START;
 
-function getIdleFrame(n) {
-  const num = String(n).padStart(4, "0");
-  return `/webp/${num}.webp`;
-}
+let speakTimer = null;
+let speakFrameIndex = SPEAK_START;
+let speakPlaying = false;
 
 function getSpeakFrame(n) {
   const num = String(n).padStart(4, "0");
   return `/webp/speak/frame_${num}.webp`;
 }
 
-function stopAnim() {
-  if (timer) clearInterval(timer);
-  timer = null;
+function stopSpeakLoop() {
+  if (speakTimer) clearInterval(speakTimer);
+  speakTimer = null;
+  speakPlaying = false;
 }
 
-function startIdle() {
-  catEl.classList.remove("speaking");
-  mode = "idle";
-  frameIndex = IDLE_START;
-  dir = 1;
-
-  stopAnim();
-  timer = setInterval(() => {
-    catEl.src = getIdleFrame(frameIndex);
-    frameIndex += dir;
-
-    if (frameIndex > IDLE_END) {
-      dir = -1;
-      frameIndex = IDLE_END - 1;
-    }
-    if (frameIndex < IDLE_START) {
-      dir = 1;
-      frameIndex = IDLE_START;
-    }
-  }, 33);
-}
-
-function startSpeak() {
+function showIdleFrame() {
+  stopSpeakLoop();
+  // 为了避免尺寸跳动：保持 speaking class（你之前的缩放修正仍然生效）
+  // 如果你想待机不缩放，可把这行改成 remove("speaking")
   catEl.classList.add("speaking");
-  mode = "speak";
-  frameIndex = SPEAK_START;
+  catEl.src = getSpeakFrame(IDLE_FRAME_INDEX);
+}
 
-  stopAnim();
-  timer = setInterval(() => {
-    catEl.src = getSpeakFrame(frameIndex);
-    frameIndex += 1;
-    if (frameIndex > SPEAK_END) frameIndex = SPEAK_START;
+function startSpeakLoop() {
+  // speaking 状态：循环播放
+  catEl.classList.add("speaking");
+  speakPlaying = true;
+  speakFrameIndex = SPEAK_START;
+
+  if (speakTimer) clearInterval(speakTimer);
+
+  speakTimer = setInterval(() => {
+    catEl.src = getSpeakFrame(speakFrameIndex);
+    speakFrameIndex += 1;
+    if (speakFrameIndex > SPEAK_END) speakFrameIndex = SPEAK_START;
   }, 33);
 }
 
-startIdle();
+// 页面初始：待机定格
+showIdleFrame();
 
 // ===============================
-// 🎵 背景音乐：默认关闭 + 按钮控制
+// 预加载所有 speak 帧（避免卡顿）
+// ===============================
+const PRELOAD_TOTAL = SPEAK_END - SPEAK_START + 1;
+
+function preloadImages(urls) {
+  return Promise.all(urls.map((u) => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve(true);
+      img.onerror = () => resolve(false);
+      img.src = u;
+
+      // 更“狠”的预解码（可选）
+      if (img.decode) {
+        img.decode().then(() => resolve(true)).catch(() => resolve(true));
+      }
+    });
+  }));
+}
+
+const hintEl = document.getElementById("hint");
+function setHint(text) {
+  if (!hintEl) return;
+  hintEl.textContent = text || "";
+}
+
+(async function preloadAll() {
+  try {
+    setHint(`正在预加载橘猫动作…（${PRELOAD_TOTAL}帧）`);
+    const urls = [];
+    for (let i = SPEAK_START; i <= SPEAK_END; i++) urls.push(getSpeakFrame(i));
+    await preloadImages(urls);
+  } finally {
+    setHint("");
+  }
+})();
+
+// ===============================
+// 🎵 背景音乐：默认关闭 + 左侧按钮开关（保留）
 // ===============================
 const bgmEl = document.getElementById("bgm");
 const musicToggleBtn = document.getElementById("musicToggle");
-const BGM_LS_KEY = "fatcat_bgm_on_v1";
 
 function setMusicUI(on) {
   if (!musicToggleBtn) return;
-  musicToggleBtn.classList.toggle("on", on);
-  musicToggleBtn.title = on ? "背景音乐：播放中（点击关闭）" : "背景音乐：关闭（点击播放）";
-  musicToggleBtn.textContent = on ? "♪" : "♪";
+  musicToggleBtn.textContent = on ? "⏸" : "♪";
+  musicToggleBtn.title = on ? "关闭音乐" : "播放音乐";
 }
 
 async function playBgm() {
@@ -98,13 +120,6 @@ function pauseBgm() {
   try { bgmEl.pause(); } catch {}
 }
 
-function getSavedBgmOn() {
-  try { return localStorage.getItem(BGM_LS_KEY) === "1"; } catch { return false; }
-}
-function saveBgmOn(on) {
-  try { localStorage.setItem(BGM_LS_KEY, on ? "1" : "0"); } catch {}
-}
-
 async function setupBgm() {
   if (!bgmEl) return;
 
@@ -112,25 +127,15 @@ async function setupBgm() {
   pauseBgm();
   setMusicUI(false);
 
-  // 如果你希望“上次打开过就自动打开”，把下面这段打开：
-  // const saved = getSavedBgmOn();
-  // if (saved) {
-  //   const ok = await playBgm();
-  //   setMusicUI(ok);
-  //   saveBgmOn(ok);
-  // }
-
   if (musicToggleBtn) {
     musicToggleBtn.addEventListener("click", async () => {
       const isPlaying = bgmEl && !bgmEl.paused;
       if (isPlaying) {
         pauseBgm();
         setMusicUI(false);
-        saveBgmOn(false);
       } else {
         const ok = await playBgm();
         setMusicUI(ok);
-        saveBgmOn(ok);
         if (!ok) {
           setHint("浏览器限制：请再点一次或先点一下页面任意位置喵。");
           setTimeout(() => setHint(""), 1800);
@@ -139,9 +144,7 @@ async function setupBgm() {
     });
   }
 }
-
 setupBgm();
-
 
 // ===============================
 // 聊天 DOM
@@ -150,7 +153,6 @@ const messagesEl = document.getElementById("messages");
 const inputEl = document.getElementById("input");
 const sendBtn = document.getElementById("send");
 const micBtn = document.getElementById("mic");
-const hintEl = document.getElementById("hint");
 
 // ===============================
 // 聊天历史
@@ -184,11 +186,6 @@ function addBubble(text, role) {
   messagesEl.scrollTop = messagesEl.scrollHeight;
 }
 
-function setHint(text) {
-  if (!hintEl) return;
-  hintEl.textContent = text || "";
-}
-
 // 渲染历史
 chatHistory.forEach(m => {
   addBubble(m.content, m.role);
@@ -208,7 +205,7 @@ function pushHistory(role, content) {
 }
 
 // ===============================
-// 🐱 进入页面第一句话（原样保留）
+// 🐱 进入页面第一句话（保留）
 // ===============================
 function daysSinceBirth(today) {
   const birth = new Date(2026, 1, 19); // 2026-02-19
@@ -227,7 +224,6 @@ function maybeSayHello() {
   addBubble(intro, "cat");
   pushHistory("assistant", intro);
 }
-
 maybeSayHello();
 
 // ===============================
@@ -240,7 +236,6 @@ async function sendTextMessage() {
   addBubble(text, "user");
   pushHistory("user", text);
   inputEl.value = "";
-  setHint("");
 
   try {
     const res = await fetch("/api/chat", {
@@ -257,19 +252,35 @@ async function sendTextMessage() {
 
     addBubble(reply, "cat");
     pushHistory("assistant", reply);
-  } catch (err) {
+  } catch {
     addBubble("橘猫网络开小差了。", "cat");
   }
 }
 
 // ===============================
-// 语音录制 + 发送 + 播放（不限时）
+// 语音录制 + 发送 + 播放（无时长限制）
+// 录音最长 15 秒；播放结束后继续动画0.3秒再定格
 // ===============================
 let mediaStream = null;
 let recorder = null;
 let chunks = [];
 let recordingTimeout = null;
 let isRecording = false;
+
+// 语音播放：用于中断上一段
+let currentVoiceAudio = null;
+let currentVoiceUrl = null;
+
+function cleanupVoiceAudio() {
+  if (currentVoiceAudio) {
+    try { currentVoiceAudio.pause(); } catch {}
+    currentVoiceAudio = null;
+  }
+  if (currentVoiceUrl) {
+    try { URL.revokeObjectURL(currentVoiceUrl); } catch {}
+    currentVoiceUrl = null;
+  }
+}
 
 function setRecordingUI(on) {
   isRecording = on;
@@ -295,7 +306,6 @@ function startRecording() {
     .then(stream => {
       chunks = [];
       const options = {};
-      // 尽量用 webm/opus（兼容最好）
       if (MediaRecorder.isTypeSupported("audio/webm;codecs=opus")) {
         options.mimeType = "audio/webm;codecs=opus";
       } else if (MediaRecorder.isTypeSupported("audio/webm")) {
@@ -317,7 +327,6 @@ function startRecording() {
       setRecordingUI(true);
       setHint("录音中…（最长 15 秒）");
 
-      // 最长 15 秒自动停止
       recordingTimeout = setTimeout(() => {
         stopRecording();
       }, 15000);
@@ -350,7 +359,6 @@ function blobToDataURL(blob) {
 }
 
 async function sendVoiceBlob(blob) {
-  // 为了 UI 干净：先放一个用户占位
   addBubble("🎙️（语音）", "user");
   pushHistory("user", "（语音）");
 
@@ -378,50 +386,24 @@ async function sendVoiceBlob(blob) {
   const audioB64 = data.audio_base64;
   const audioMime = data.audio_mime || "audio/mpeg";
 
-  // 把用户占位替换成转写（不改历史结构，避免复杂；直接再追加一条）
   if (transcript) {
     addBubble(`🎙️ ${transcript}`, "user");
     pushHistory("user", transcript);
   }
 
-  // 语音回复：不刷屏，只显示一行提示
   addBubble("（洛洛在用语音回复你）", "cat");
   pushHistory("assistant", replyText);
 
   setHint("加载语音中…");
 
-  // 播放语音（不限时）+ 说话动画循环直到结束
   if (audioB64) {
-    await playVoiceAudio(audioB64, audioMime);
+    await playVoiceAudioNoLimit(audioB64, audioMime);
   }
 
   setHint("");
 }
 
-// ===============================
-// 语音播放：不裁剪，不限时；说话动画循环直到音频真正结束
-// ===============================
-let currentVoiceAudio = null;
-let currentVoiceUrl = null;
-
-function cleanupVoiceAudio() {
-  try {
-    if (currentVoiceAudio) {
-      currentVoiceAudio.pause();
-      currentVoiceAudio.src = "";
-      currentVoiceAudio.load();
-    }
-  } catch {}
-  currentVoiceAudio = null;
-
-  if (currentVoiceUrl) {
-    try { URL.revokeObjectURL(currentVoiceUrl); } catch {}
-  }
-  currentVoiceUrl = null;
-}
-
-async function playVoiceAudio(b64, mime = "audio/mpeg") {
-  // 停掉上一段（新语音来了就打断上一段，避免叠音/状态错乱）
+async function playVoiceAudioNoLimit(b64, mime = "audio/mpeg") {
   cleanupVoiceAudio();
 
   const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
@@ -436,27 +418,28 @@ async function playVoiceAudio(b64, mime = "audio/mpeg") {
 
   return await new Promise((resolve) => {
     const finish = () => {
-      // ✅ 音频真正结束：立刻回蹦迪
-      startIdle();
-      cleanupVoiceAudio();
-      resolve();
+      // ✅ 音频结束：动画再继续0.3秒，然后定格回第一帧
+      setTimeout(() => {
+        showIdleFrame();
+        cleanupVoiceAudio();
+        resolve();
+      }, 300);
     };
 
     audio.addEventListener("ended", finish, { once: true });
     audio.addEventListener("error", () => {
-      startIdle();
+      showIdleFrame();
       cleanupVoiceAudio();
       setHint("语音播放失败了喵。");
       setTimeout(() => setHint(""), 1200);
       resolve();
     }, { once: true });
 
-    // 只有在真正开始播放时再切说话动画，避免浏览器拦截导致一直说话
     audio.play().then(() => {
-      startSpeak(); // ✅ 开始播放就说话
+      startSpeakLoop(); // ✅ 真正开始播放才开始说话动画
     }).catch(() => {
-      // 播放被浏览器拦截：不切说话，提示用户点一下
-      startIdle();
+      // 播放被浏览器拦截：保持定格
+      showIdleFrame();
       setHint("浏览器拦截了自动播放：请再点一下页面或再发一次喵。");
       setTimeout(() => setHint(""), 1800);
       cleanupVoiceAudio();
