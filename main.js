@@ -32,6 +32,7 @@ function stopAnim() {
 }
 
 function startIdle() {
+  catEl.classList.remove("speaking");
   mode = "idle";
   frameIndex = IDLE_START;
   dir = 1;
@@ -53,6 +54,7 @@ function startIdle() {
 }
 
 function startSpeak() {
+  catEl.classList.add("speaking");
   mode = "speak";
   frameIndex = SPEAK_START;
 
@@ -67,33 +69,79 @@ function startSpeak() {
 startIdle();
 
 // ===============================
-// 🎵 BGM 控制（原样保留）
+// 🎵 背景音乐：默认关闭 + 按钮控制
 // ===============================
 const bgmEl = document.getElementById("bgm");
+const musicToggleBtn = document.getElementById("musicToggle");
+const BGM_LS_KEY = "fatcat_bgm_on_v1";
 
-function setupBgm() {
+function setMusicUI(on) {
+  if (!musicToggleBtn) return;
+  musicToggleBtn.classList.toggle("on", on);
+  musicToggleBtn.title = on ? "背景音乐：播放中（点击关闭）" : "背景音乐：关闭（点击播放）";
+  musicToggleBtn.textContent = on ? "♪" : "♪";
+}
+
+async function playBgm() {
+  if (!bgmEl) return false;
+  try {
+    bgmEl.volume = 0.25;
+    await bgmEl.play();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function pauseBgm() {
+  if (!bgmEl) return;
+  try { bgmEl.pause(); } catch {}
+}
+
+function getSavedBgmOn() {
+  try { return localStorage.getItem(BGM_LS_KEY) === "1"; } catch { return false; }
+}
+function saveBgmOn(on) {
+  try { localStorage.setItem(BGM_LS_KEY, on ? "1" : "0"); } catch {}
+}
+
+async function setupBgm() {
   if (!bgmEl) return;
 
-  bgmEl.volume = 0.25;
-  bgmEl.muted = true;
+  // 默认关闭：不自动播放
+  pauseBgm();
+  setMusicUI(false);
 
-  const tryPlay = () => bgmEl.play().catch(() => {});
+  // 如果你希望“上次打开过就自动打开”，把下面这段打开：
+  // const saved = getSavedBgmOn();
+  // if (saved) {
+  //   const ok = await playBgm();
+  //   setMusicUI(ok);
+  //   saveBgmOn(ok);
+  // }
 
-  // 页面加载先尝试播放（静音）
-  tryPlay();
-
-  // 用户第一次交互后开声
-  const enableSound = () => {
-    bgmEl.muted = false;
-    bgmEl.volume = 0.25;
-    tryPlay();
-  };
-
-  window.addEventListener("pointerdown", enableSound, { once: true });
-  window.addEventListener("keydown", enableSound, { once: true });
+  if (musicToggleBtn) {
+    musicToggleBtn.addEventListener("click", async () => {
+      const isPlaying = bgmEl && !bgmEl.paused;
+      if (isPlaying) {
+        pauseBgm();
+        setMusicUI(false);
+        saveBgmOn(false);
+      } else {
+        const ok = await playBgm();
+        setMusicUI(ok);
+        saveBgmOn(ok);
+        if (!ok) {
+          setHint("浏览器限制：请再点一次或先点一下页面任意位置喵。");
+          setTimeout(() => setHint(""), 1800);
+        }
+      }
+    });
+  }
 }
 
 setupBgm();
+
 
 // ===============================
 // 聊天 DOM
@@ -267,12 +315,12 @@ function startRecording() {
 
       recorder.start();
       setRecordingUI(true);
-      setHint("录音中…（最长 9 秒）");
+      setHint("录音中…（最长 15 秒）");
 
-      // 最长 9 秒自动停止
+      // 最长 15 秒自动停止
       recordingTimeout = setTimeout(() => {
         stopRecording();
-      }, 9000);
+      }, 15000);
     })
     .catch(() => {
       setHint("麦克风权限被拒绝了喵。");
@@ -351,52 +399,59 @@ async function sendVoiceBlob(blob) {
 }
 
 async function playFixed5sAudio(b64, mime) {
-  // 确保音频上下文解锁（用户已经点了麦克风，基本没问题）
   const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
   const binary = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
   const audioBuf = await audioCtx.decodeAudioData(binary.buffer.slice(0));
 
-  // 开始说话动画（等音频 decode 完才切换，符合“完成加载音频时”）
-  startSpeak();
-
-  // 播放主音频
-  const src1 = audioCtx.createBufferSource();
-  src1.buffer = audioBuf;
-  src1.connect(audioCtx.destination);
-
   const startAt = audioCtx.currentTime + 0.02;
   const targetDur = 5.0;
 
-  if (audioBuf.duration >= targetDur) {
-    src1.start(startAt, 0, targetDur);
-    src1.stop(startAt + targetDur);
-    await waitMs( Math.ceil(targetDur * 1000) );
-  } else {
-    // 先播放原音频
-    src1.start(startAt);
-    src1.stop(startAt + audioBuf.duration);
+  // ✅ 说话动画：一直循环到“语音真正结束”为止
+  startSpeak();
 
-    // 不够 5 秒就补一段静音
-    const remain = targetDur - audioBuf.duration;
-    const silentBuf = audioCtx.createBuffer(1, Math.ceil(audioCtx.sampleRate * remain), audioCtx.sampleRate);
-    const src2 = audioCtx.createBufferSource();
-    src2.buffer = silentBuf;
-    src2.connect(audioCtx.destination);
-    src2.start(startAt + audioBuf.duration);
-    src2.stop(startAt + targetDur);
+  const done = new Promise((resolve) => {
+    let ended = false;
+    const finish = async () => {
+      if (ended) return;
+      ended = true;
+      startIdle(); // ✅ 语音一结束立马恢复蹦迪
+      try { await audioCtx.close(); } catch {}
+      resolve();
+    };
 
-    await waitMs( Math.ceil(targetDur * 1000) );
-  }
+    if (audioBuf.duration >= targetDur) {
+      const src = audioCtx.createBufferSource();
+      src.buffer = audioBuf;
+      src.connect(audioCtx.destination);
+      src.onended = finish;
+      src.start(startAt, 0, targetDur);
+      src.stop(startAt + targetDur);
+    } else {
+      const src1 = audioCtx.createBufferSource();
+      src1.buffer = audioBuf;
+      src1.connect(audioCtx.destination);
+      src1.start(startAt);
+      src1.stop(startAt + audioBuf.duration);
 
-  // 结束：回到待机蹦迪
-  startIdle();
+      const remain = targetDur - audioBuf.duration;
+      const silentBuf = audioCtx.createBuffer(1, Math.ceil(audioCtx.sampleRate * remain), audioCtx.sampleRate);
+      const src2 = audioCtx.createBufferSource();
+      src2.buffer = silentBuf;
+      src2.connect(audioCtx.destination);
+      src2.onended = finish; // ✅ 最后一段结束触发恢复
+      src2.start(startAt + audioBuf.duration);
+      src2.stop(startAt + targetDur);
+    }
+  });
 
-  // 释放
-  try { await audioCtx.close(); } catch {}
+  await done;
 }
 
 function waitMs(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 

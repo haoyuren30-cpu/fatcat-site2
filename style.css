@@ -25,6 +25,42 @@ body > * {
 /* =========================
    1) Cat (强制居中)
    ========================= */
+.cat-wrap{
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.music-toggle{
+  position: absolute;
+  left: -56px;
+  top: 50%;
+  transform: translateY(-50%);
+
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  border: 1px solid #ddd;
+  background: #fff;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 44px;
+}
+
+.music-toggle.on{
+  border-color: #ff9f43;
+}
+
+@media (max-width: 600px){
+  .music-toggle{
+    left: -46px;
+    width: 40px;
+    height: 40px;
+    line-height: 40px;
+  }
+}
+
 #fatcat{
   width: 440px;          /* 桌面更大 */
   max-width: 92vw;
@@ -34,6 +70,11 @@ body > * {
   margin: 0 auto;        /* ✅ 强制水平居中 */
 
   user-select: none;
+  transform-origin: 50% 100%; /* 从脚底缩放，避免上下跳 */
+}
+
+#fatcat.speaking {
+  transform: scale(0.82); /* 说话帧构图更大：统一视觉大小 */
 }
 
 /* =========================

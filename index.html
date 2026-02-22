@@ -11,6 +11,7 @@
 
   <!-- 橘猫 -->
   <div class="cat-wrap">
+    <button id="musicToggle" class="music-toggle" title="背景音乐：关闭">♪</button>
     <img id="fatcat" src="/webp/0001.webp" alt="fatcat" />
   </div>
 
@@ -21,7 +22,7 @@
     <div class="input-bar">
       <input id="input" placeholder="跟橘猫说点什么..." />
       <button id="send" title="发送">→</button>
-      <button id="mic" class="mic" title="按一下说话（最长9秒）" aria-label="语音输入">🎤</button>
+      <button id="mic" class="mic" title="按一下说话（最长15秒）" aria-label="语音输入">🎤</button>
     </div>
 
     <div id="hint" class="hint" aria-live="polite"></div>
@@ -33,9 +34,7 @@
     src="/audio/lolo_idle.mp3"
     loop
     preload="auto"
-    autoplay
-    muted
-  ></audio>
+></audio>
 
 <script src="main.js"></script>
 </body>
