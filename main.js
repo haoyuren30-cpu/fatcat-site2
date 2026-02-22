@@ -263,7 +263,7 @@ async function sendTextMessage() {
 }
 
 // ===============================
-// 语音录制 + 发送 + 播放（固定 5 秒）
+// 语音录制 + 发送 + 播放（不限时）
 // ===============================
 let mediaStream = null;
 let recorder = null;
@@ -390,66 +390,79 @@ async function sendVoiceBlob(blob) {
 
   setHint("加载语音中…");
 
-  // 播放固定 5 秒音频 + 播放说话动画
+  // 播放语音（不限时）+ 说话动画循环直到结束
   if (audioB64) {
-    await playFixed5sAudio(audioB64, audioMime);
+    await playVoiceAudio(audioB64, audioMime);
   }
 
   setHint("");
 }
 
-async function playFixed5sAudio(b64, mime) {
-  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+// ===============================
+// 语音播放：不裁剪，不限时；说话动画循环直到音频真正结束
+// ===============================
+let currentVoiceAudio = null;
+let currentVoiceUrl = null;
 
-  const binary = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
-  const audioBuf = await audioCtx.decodeAudioData(binary.buffer.slice(0));
+function cleanupVoiceAudio() {
+  try {
+    if (currentVoiceAudio) {
+      currentVoiceAudio.pause();
+      currentVoiceAudio.src = "";
+      currentVoiceAudio.load();
+    }
+  } catch {}
+  currentVoiceAudio = null;
 
-  const startAt = audioCtx.currentTime + 0.02;
-  const targetDur = 5.0;
+  if (currentVoiceUrl) {
+    try { URL.revokeObjectURL(currentVoiceUrl); } catch {}
+  }
+  currentVoiceUrl = null;
+}
 
-  // ✅ 说话动画：一直循环到“语音真正结束”为止
-  startSpeak();
+async function playVoiceAudio(b64, mime = "audio/mpeg") {
+  // 停掉上一段（新语音来了就打断上一段，避免叠音/状态错乱）
+  cleanupVoiceAudio();
 
-  const done = new Promise((resolve) => {
-    let ended = false;
-    const finish = async () => {
-      if (ended) return;
-      ended = true;
-      startIdle(); // ✅ 语音一结束立马恢复蹦迪
-      try { await audioCtx.close(); } catch {}
+  const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+  const blob = new Blob([bytes], { type: mime });
+  const url = URL.createObjectURL(blob);
+
+  const audio = new Audio(url);
+  audio.preload = "auto";
+
+  currentVoiceAudio = audio;
+  currentVoiceUrl = url;
+
+  return await new Promise((resolve) => {
+    const finish = () => {
+      // ✅ 音频真正结束：立刻回蹦迪
+      startIdle();
+      cleanupVoiceAudio();
       resolve();
     };
 
-    if (audioBuf.duration >= targetDur) {
-      const src = audioCtx.createBufferSource();
-      src.buffer = audioBuf;
-      src.connect(audioCtx.destination);
-      src.onended = finish;
-      src.start(startAt, 0, targetDur);
-      src.stop(startAt + targetDur);
-    } else {
-      const src1 = audioCtx.createBufferSource();
-      src1.buffer = audioBuf;
-      src1.connect(audioCtx.destination);
-      src1.start(startAt);
-      src1.stop(startAt + audioBuf.duration);
+    audio.addEventListener("ended", finish, { once: true });
+    audio.addEventListener("error", () => {
+      startIdle();
+      cleanupVoiceAudio();
+      setHint("语音播放失败了喵。");
+      setTimeout(() => setHint(""), 1200);
+      resolve();
+    }, { once: true });
 
-      const remain = targetDur - audioBuf.duration;
-      const silentBuf = audioCtx.createBuffer(1, Math.ceil(audioCtx.sampleRate * remain), audioCtx.sampleRate);
-      const src2 = audioCtx.createBufferSource();
-      src2.buffer = silentBuf;
-      src2.connect(audioCtx.destination);
-      src2.onended = finish; // ✅ 最后一段结束触发恢复
-      src2.start(startAt + audioBuf.duration);
-      src2.stop(startAt + targetDur);
-    }
+    // 只有在真正开始播放时再切说话动画，避免浏览器拦截导致一直说话
+    audio.play().then(() => {
+      startSpeak(); // ✅ 开始播放就说话
+    }).catch(() => {
+      // 播放被浏览器拦截：不切说话，提示用户点一下
+      startIdle();
+      setHint("浏览器拦截了自动播放：请再点一下页面或再发一次喵。");
+      setTimeout(() => setHint(""), 1800);
+      cleanupVoiceAudio();
+      resolve();
+    });
   });
-
-  await done;
-}
-
-function waitMs(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 // ===============================
