@@ -308,6 +308,7 @@ let recorder = null;
 let chunks = [];
 let recordingTimeout = null;
 let isRecording = false;
+let isSendingVoice = false;
 
 // 语音播放：用于中断上一段
 let currentVoiceAudio = null;
@@ -338,6 +339,7 @@ async function ensureMicPermission() {
 
 function startRecording() {
   if (isRecording) return;
+  if (isSendingVoice) { setHint('上一段语音还在处理喵…'); return; }
 
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     setHint("这个浏览器不支持录音喵。");
@@ -359,10 +361,21 @@ function startRecording() {
         if (e.data && e.data.size > 0) chunks.push(e.data);
       };
       recorder.onstop = () => {
-        const blob = new Blob(chunks, { type: recorder.mimeType || "audio/webm" });
+        const mime = (recorder && recorder.mimeType) ? recorder.mimeType : "audio/webm";
+        const blob = new Blob(chunks, { type: mime });
         chunks = [];
         setRecordingUI(false);
-        sendVoiceBlob(blob).catch(() => {});
+
+        if (!blob || blob.size < 800) {
+          // 太短/空录音，直接提示，不发请求
+          setHint("录音太短啦，再说一次喵～");
+          return;
+        }
+
+        isSendingVoice = true;
+        sendVoiceBlob(blob)
+          .catch(() => {})
+          .finally(() => { isSendingVoice = false; });
       };
 
       recorder.start();
@@ -384,7 +397,10 @@ function stopRecording() {
   recordingTimeout = null;
 
   try {
-    if (recorder && recorder.state !== "inactive") recorder.stop();
+    if (recorder && recorder.state !== "inactive") {
+      try { recorder.requestData(); } catch {}
+      recorder.stop();
+    }
   } catch {
     setRecordingUI(false);
   }

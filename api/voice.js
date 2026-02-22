@@ -6,7 +6,7 @@ const { toFile } = require("openai");
 
 // ===== 可调参数 =====
 const HISTORY_WINDOW = 10;
-const MAX_AUDIO_BYTES = 7 * 1024 * 1024; // 约束一下（9秒 webm 一般远小于这个）
+const MAX_AUDIO_BYTES = 15 * 1024 * 1024; // 放宽到15MB，15秒webm一般足够
 // ===================
 
 function stripDataUrl(b64) {
@@ -76,6 +76,9 @@ module.exports = async function handler(req, res) {
   ].join("\n");
 
   try {
+    if (!process.env.OPENAI_API_KEY) {
+      return res.status(500).json({ error: 'Missing OPENAI_API_KEY' });
+    }
     const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
     // 1) STT
