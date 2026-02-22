@@ -13,13 +13,31 @@ const SPEAK_END = 105;
 // 待机使用 speak 第一帧
 const IDLE_FRAME_INDEX = SPEAK_START;
 
+// 语音结束后要停在“闭嘴帧”（顺序最近的一帧）并定格到下一次说话
+const MOUTH_CLOSED_FRAMES = [41, 42, 43, 58, 59, 68, 105];
+let stopOnClosedRequested = false;
+let targetClosedFrame = null;
+let currentDisplayedFrame = SPEAK_START;
+
+
 let speakTimer = null;
 let speakFrameIndex = SPEAK_START;
 let speakPlaying = false;
 
+let freezeResolve = null;
+
 function getSpeakFrame(n) {
   const num = String(n).padStart(4, "0");
   return `/webp/speak/frame_${num}.webp`;
+}
+
+function nextClosedFrame(cur) {
+  // cur: 当前正在显示的帧编号（1..105）
+  for (const f of MOUTH_CLOSED_FRAMES) {
+    if (f >= cur) return f;
+  }
+  // 如果当前已经超过最后一个闭嘴帧：顺序循环到第一个闭嘴帧
+  return MOUTH_CLOSED_FRAMES[0];
 }
 
 function stopSpeakLoop() {
@@ -40,12 +58,36 @@ function startSpeakLoop() {
   // speaking 状态：循环播放
   catEl.classList.add("speaking");
   speakPlaying = true;
+
+  // 新一轮说话开始：清空“停在闭嘴帧”状态
+  stopOnClosedRequested = false;
+  targetClosedFrame = null;
+
   speakFrameIndex = SPEAK_START;
 
   if (speakTimer) clearInterval(speakTimer);
 
   speakTimer = setInterval(() => {
+    // 当前显示帧 = speakFrameIndex
     catEl.src = getSpeakFrame(speakFrameIndex);
+    currentDisplayedFrame = speakFrameIndex;
+
+    // 如果已经收到“音频结束”信号：继续播放到顺序最近的闭嘴帧后定格
+    if (stopOnClosedRequested && targetClosedFrame && currentDisplayedFrame === targetClosedFrame) {
+      // 定格在闭嘴帧
+      stopSpeakLoop();
+      catEl.classList.add("speaking");
+      catEl.src = getSpeakFrame(targetClosedFrame);
+      stopOnClosedRequested = false;
+      targetClosedFrame = null;
+      if (typeof freezeResolve === "function") {
+        const r = freezeResolve;
+        freezeResolve = null;
+        r();
+      }
+      return;
+    }
+
     speakFrameIndex += 1;
     if (speakFrameIndex > SPEAK_END) speakFrameIndex = SPEAK_START;
   }, 33);
@@ -418,12 +460,13 @@ async function playVoiceAudioNoLimit(b64, mime = "audio/mpeg") {
 
   return await new Promise((resolve) => {
     const finish = () => {
-      // ✅ 音频结束：动画再继续0.3秒，然后定格回第一帧
-      setTimeout(() => {
-        showIdleFrame();
-        cleanupVoiceAudio();
-        resolve();
-      }, 300);
+      // ✅ 音频结束：继续播放到顺序最近的闭嘴帧后定格
+      stopOnClosedRequested = true;
+      targetClosedFrame = nextClosedFrame(currentDisplayedFrame);
+      cleanupVoiceAudio();
+
+      // 等真正定格到闭嘴帧后再 resolve（更精确）
+      freezeResolve = () => resolve();
     };
 
     audio.addEventListener("ended", finish, { once: true });
